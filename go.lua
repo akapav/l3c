@@ -1,17 +1,23 @@
 local gfd = 0
-
 local function wait()
    gfd = gfd + 1
    print(gfd)
    coroutine.yield(gfd)
 end
 
-local pending_tasks = {}
+------
 
+local pending_tasks = {}
 local tasks = {}
 
-local function go(task)
-   table.insert(pending_tasks, coroutine.create(task))
+local function thunk(f, ...)
+   local args = { ... }
+   return function () return f(unpack(args)) end
+end
+
+local function go(task, ...)
+   local f = thunk(task, ...)
+   table.insert(pending_tasks, coroutine.create(f))
 end
 
 local function run_pending()
@@ -42,7 +48,8 @@ local function run(f)
 end
 
 ------
-local function f2()
+local function f2(x, y)
+   print(string.format("f2: %d %d", x, y))
    while true do
       print "f2: alo prije"
       wait()
@@ -59,7 +66,7 @@ local function f3()
 end
 
 local function main()
-   go(f2)
+   go(f2, 100, 200)
    go(f3)
    while true do
       print "alo prije"
