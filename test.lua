@@ -3,35 +3,37 @@ uv = require 'luv'
 
 local function sleep(n)
    local t = uv.new_timer()
-   t:start(n, n, l3c.async_handler(t))
+   t:start(n, 0, l3c.async_handler(t))
    coroutine.yield('async', t)
 end
 
 local function signal(sig)
    local h = uv.new_signal()
-   h:signal_start(sig, l3c.async_handler(h))
+   uv.signal_start(h, sig, l3c.async_handler(h))
    coroutine.yield('async', h)
 end
 
 
 local function tmr(ch)
    while true do
-      sleep(1000)
+      print 'a'
+      signal 'sighup'
+      sleep (1000)
+      print 'b'
       l3c.send(ch, 1)
    end
 end
 
 local function uvce()
-   log ("press ctrl-c to start")
    ch = l3c.chan()
-   go (tmr, ch)
+   l3c.go (tmr, ch)
    while true do
       l3c.recv(ch)
-      print "alo"
+      print  'sec'
    end
 end
 
---l3c.run(uvce)
+l3c.run(uvce)
 
 
 local function to(ch1, ch2)
@@ -63,4 +65,4 @@ local function from()
    end
 end
 
-l3c.run (from)
+--l3c.run (from)
