@@ -22,7 +22,7 @@ end
 
 local recv_pull
 local function send(ch, val)
-   if ch.q:is_full() then
+   while ch.q:is_full() do
       coroutine.yield('schan', ch.id)
    end
    recv_pull(ch.id)
@@ -31,7 +31,7 @@ end
 
 local send_pull
 local function recv(ch)
-   if ch.q:is_empty() then
+   while ch.q:is_empty() do
       coroutine.yield('rchan', ch.id)
    end
    send_pull(ch.id)
@@ -75,10 +75,10 @@ function recv_wait(chid, task) add_wait_queue(recv_wq, chid, task) end
 recv_pull = function (chid) pull_wait_queue(recv_wq, chid) end
 
 local function resume(task)
-   if not task then return end
+   --if not task then return end
    
    local ok, type, key = coroutine.resume(task)
-   if not ok then return end -- task throwed an exception
+   if not ok then print "kita"; return end -- task throwed an exception
    if coroutine.status(task) == 'dead' then return end
 
    if     type == 'async' then async_tasks[key] = task
