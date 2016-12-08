@@ -1,5 +1,3 @@
-uv = require 'luv'
-
 ----- utils -----
 local q = require 'queue'
 
@@ -13,13 +11,6 @@ local function thunk(f, ...)
 end
 
 ----- channels -----
-local chid = 0
-local function chan(size)
-   chid = chid + 1
-   local ch = { id = chid; q = q.fixed_queue_new(size) }
-   return ch
-end
-
 local recv_pull
 local function send(ch, val)
    while ch.q:is_full() do
@@ -36,6 +27,15 @@ local function recv(ch)
    end
    send_pull(ch.id)
    return ch.q:dequeue()
+end
+
+local chid = 0
+local chanMT = { __index = { send = send, recv = recv }}
+local function chan(size)
+   chid = chid + 1
+   local ch = { id = chid; q = q.fixed_queue_new(size) }
+   setmetatable(ch, chanMT)
+   return ch
 end
 
 ----- tasks -----
@@ -98,12 +98,14 @@ local function go(task, ...)
    pending_tasks:enqueue(coroutine.create(f))
 end
 
-local function run(f)
-   go(f)
+local function run(step)
+   return function (f)
+      go(f)
    
-   while true do
-      flush_pending_tasks()
-      uv.run "once"
+      while true do
+	 flush_pending_tasks()
+	 step()
+      end
    end
 end
 

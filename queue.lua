@@ -16,8 +16,13 @@ local function log (fmt, ...)
 end
 
 -- list
-local function list(h, t)
-   return { h_ = h, t_ = t }
+local function list(...)
+   local args = { ... }
+   local cons  = nil
+   for i = #args, 1, -1 do
+      cons = { h_ = args[i], t_ = cons }
+   end
+   return cons
 end
 
 local function first(cell)

@@ -1,6 +1,8 @@
 l3c = require 'go'
 uv = require 'luv'
 
+local run = l3c.run(function () uv.run "once" end)
+
 local function sleep(n)
    local t = uv.new_timer()
    t:start(n, 0, l3c.async_handler(t))
@@ -13,6 +15,13 @@ local function signal(sig)
    coroutine.yield('async', h)
 end
 
+local function connection_wait(addr, port)
+   local srv = uv.new_tcp()
+   uv.tcp_bind(srv, addr, port)
+   print (srv)
+   uv.listen(srv, 128, l3c.async_handler(srv))
+   coroutine.yield('async', srv)
+end
 
 local function tmr(ch)
    while true do
@@ -24,7 +33,12 @@ local function tmr(ch)
    end
 end
 
+--socat stdio tcp:127.0.0.1:8110
+--pkill -sighup luajit
+
 local function uvce()
+   connection_wait("127.0.0.1", 8110)
+   print 'conn ok'
    ch = l3c.chan()
    l3c.go (tmr, ch)
    while true do
@@ -33,7 +47,8 @@ local function uvce()
    end
 end
 
-l3c.run(uvce)
+--connection_wait("127.0.0.1", 8111)
+run(uvce)
 
 
 local function to(ch1, ch2)
@@ -65,4 +80,4 @@ local function from()
    end
 end
 
---l3c.run (from)
+run (from)
