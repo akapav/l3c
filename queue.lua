@@ -15,37 +15,7 @@ local function log (fmt, ...)
    print (string.format(fmt, ...))
 end
 
--- list
-local function list(...)
-   local args = { ... }
-   local cons  = nil
-   for i = #args, 1, -1 do
-      cons = { h_ = args[i], t_ = cons }
-   end
-   return cons
-end
-
-local function first(cell)
-   assert(cell, 'empty cell')
-   return cell.h_
-end
-
-local function first_set(cell, h)
-   assert(cell, 'empty cell')
-   cell.h_ = h
-   return cell
-end
-
-local function rest(cell)
-   assert(cell, 'empty cell')
-   return cell.t_
-end
-
-local function rest_set(cell, t)
-   assert(cell, 'empty cell')
-   cell.t_ = t
-   return cell
-end
+local list = require 'list'
 
 -- fixed queue
 
@@ -100,13 +70,13 @@ end
 
 local function q_front(q)
    assert(not q_is_empty(q), 'set queue is empty')
-   return first(q.end_)
+   return list.first(q.end_)
 end
 
 local function q_enqueue(q, val)
-   local new_beg_ = list(val)
+   local new_beg_ = list.new(val)
    if q.beg_ then
-      rest_set(q.beg_, new_beg_);
+      list.rest_set(q.beg_, new_beg_);
       q.beg_ = new_beg_
    else
       q.beg_ = new_beg_
@@ -117,7 +87,7 @@ end
 local function q_dequeue(q)
    assert(not q_is_empty(q), 'set queue is empty')
    local ret = q_front(q)
-   q.end_ = rest(q.end_)
+   q.end_ = list.rest(q.end_)
    if not q.end_ then q.beg_ = nil end
    return ret
 end

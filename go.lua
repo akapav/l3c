@@ -30,11 +30,11 @@ local function recv(ch)
 end
 
 local chid = 0
-local chanMT = { __index = { send = send, recv = recv }}
+local chan_mt = { __index = { send = send, recv = recv }}
 local function chan(size)
    chid = chid + 1
    local ch = { id = chid; q = q.fixed_queue_new(size) }
-   setmetatable(ch, chanMT)
+   setmetatable(ch, chan_mt)
    return ch
 end
 
