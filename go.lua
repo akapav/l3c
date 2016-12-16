@@ -38,6 +38,21 @@ local function chan(size)
    return ch
 end
 
+local function select (s)
+   local chids = {}
+   while true do
+      for i = 1, #s do
+	 local ch = s[i][1]
+	 if not ch.q:is_empty() then
+	    s[i][2](ch.q:dequeue())
+	    return
+	 end
+	 chids[#chids + 1] = ch.id
+      end
+      coroutine.yield('selec', chids)
+   end
+end
+
 ----- tasks -----
 local pending_tasks = q.queue_new()
 
@@ -62,7 +77,13 @@ local function pull_wait_queue(wq, chid)
    if not wq[chid]        then return end
    if wq[chid]:is_empty() then return end
 
-   pending_tasks:enqueue(wq[chid]:dequeue())
+   local qtask = wq[chid]:dequeue()
+   if     type(qtask) == 'thread' then pending_tasks:enqueue(qtask)
+   elseif qtask.consumed          then pull_wait_queue(wq, chid)
+   else
+      qtask.consumed = true
+      pending_tasks:enqueue(qtask.task)
+   end
 end
 
 local send_wq = {}
@@ -74,6 +95,11 @@ local recv_wq = {}
 function recv_wait(chid, task) add_wait_queue(recv_wq, chid, task) end
 recv_pull = function (chid) pull_wait_queue(recv_wq, chid) end
 
+local function select_wait (chids, task)
+   local stask = { task = task, consumed = false }
+   for i = 1, #chids do  recv_wait(chids[i], stask)  end
+end
+
 local function resume(task)
    --if not task then return end
    
@@ -84,6 +110,7 @@ local function resume(task)
    if     type == 'async' then async_tasks[key] = task
    elseif type == 'schan' then send_wait(key, task)
    elseif type == 'rchan' then recv_wait(key, task)
+   elseif type == 'selec' then select_wait(key, task)
    end
 end
 
@@ -116,7 +143,8 @@ return {
    ;
    chan = chan,
    recv = recv,
-   send = send
+   send = send,
+   select = select
    ;
    async_handler = async_handler
 }
